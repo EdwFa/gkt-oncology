@@ -29,7 +29,7 @@ st.markdown("""
 chunks_file: Path = Path("data/chunks/all_chunks.jsonl")
 ner_file: Path = Path("data/processed_docs/ner_pilot_results.json")
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def load_data() -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Any]]:
     """
     Загружает и кеширует данные чанков и NER.
