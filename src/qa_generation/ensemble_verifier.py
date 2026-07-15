@@ -47,12 +47,12 @@ class EnsembleVerifier:
     """
     
     def __init__(self) -> None:
-        # Модели и их веса (будут калиброваться позже на основе экспертных оценок врачей)
+        # Модели и их веса (калиброванные на основе MAE от медианы)
         self.models: List[Dict[str, Any]] = [
             {"name": "meta-llama/Llama-3.3-70B-Instruct-Turbo", "weight": 1.0},
-            {"name": "Qwen/Qwen2.5-7B-Instruct-Turbo", "weight": 0.8},
-            {"name": "google/gemma-2-27b-it", "weight": 0.9},
-            {"name": "mistralai/Mixtral-8x7B-Instruct-v0.1", "weight": 0.8}
+            {"name": "Qwen/Qwen2.5-7B-Instruct-Turbo", "weight": 1.0},
+            {"name": "google/gemma-2-27b-it", "weight": 0.1},
+            {"name": "mistralai/Mixtral-8x7B-Instruct-v0.1", "weight": 0.1}
         ]
         self.headers: Dict[str, str] = {
             "Authorization": f"Bearer {TOGETHER_API_KEY}",
