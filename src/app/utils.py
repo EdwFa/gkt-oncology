@@ -124,6 +124,7 @@ def setup_sidebar() -> None:
         st.page_link("pages/4_Document_Storage.py", label="Document Storage", icon="📁")
         st.page_link("pages/2_QA_Viewer.py", label="QA Viewer", icon="🤖")
         st.page_link("pages/3_Sandbox.py", label="Sandbox", icon="🧪")
+        st.page_link("pages/5_Evaluation.py", label="Evaluation", icon="📈")
         
         st.markdown("---")
         st.markdown("<small>dhc@sechenov.ai<br>Версия 0.1.0 MVP</small>", unsafe_allow_html=True)
