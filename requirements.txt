@@ -1,0 +1,23 @@
+# Базовые библиотеки
+python-dotenv==1.0.1
+aiohttp==3.9.5
+pydantic==2.7.4
+tqdm==4.66.4
+streamlit
+pandas
+
+# Работа с документами
+docling
+beautifulsoup4==4.12.3
+langchain-text-splitters
+
+# NLP и ML
+transformers
+datasets
+peft
+bitsandbytes>=0.42.0
+torch
+accelerate
+
+# Вместо unsloth можно использовать базовые transformers + peft, если не нужен агрессивный хак внимания,
+# но если будем использовать unsloth, то его лучше ставить из исходников или по инструкции.
