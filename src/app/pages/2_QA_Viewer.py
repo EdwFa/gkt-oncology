@@ -1,11 +1,16 @@
+"""
+Страница просмотра сгенерированного QA-датасета и оценок верификатора.
+Выводит удобную таблицу со статусами верификации, вопросами, ответами и 
+подробными оценками от каждой LLM в ансамбле.
+"""
 import streamlit as st
 import json
 import pandas as pd
 from pathlib import Path
+from typing import List, Dict, Any
 
 import sys
-from pathlib import Path
-root_path = Path(__file__).resolve().parent.parent.parent.parent
+root_path: Path = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.append(str(root_path))
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
@@ -22,17 +27,23 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-qa_file = Path("data/qa_dataset/raw_dataset.jsonl")
+qa_file: Path = Path("data/qa_dataset/raw_dataset.jsonl")
 
 @st.cache_data
-def load_qa_data():
-    qa_pairs = []
+def load_qa_data() -> List[Dict[str, Any]]:
+    """
+    Загружает QA-датасет из файла raw_dataset.jsonl.
+    
+    Returns:
+        List[Dict[str, Any]]: Список словарей, каждый из которых представляет QA-пару.
+    """
+    qa_pairs: List[Dict[str, Any]] = []
     if qa_file.exists():
         with open(qa_file, 'r', encoding='utf-8') as f:
             for line in f:
                 try:
                     qa_pairs.append(json.loads(line))
-                except:
+                except Exception:
                     continue
     return qa_pairs
 
@@ -41,14 +52,13 @@ qa_pairs = load_qa_data()
 if not qa_pairs:
     st.warning("QA-датасет пока пуст. Запустите оркестратор.")
 else:
-    # Конвертация в датафрейм для удобного просмотра и фильтрации
-    df_data = []
+    # Конвертация в pandas DataFrame для удобного просмотра и фильтрации
+    df_data: List[Dict[str, Any]] = []
     for qa in qa_pairs:
-        v = qa.get("verification", {})
-        passed = v.get("passed", False)
-        reason = v.get("reason", "")
+        v: Dict[str, Any] = qa.get("verification", {})
+        passed: bool = v.get("passed", False)
         
-        # Если провалено из-уа отказа, добавим метку
+        # Определение статуса: отказ A-Agent'а, успешно пройдено или провалено ансамблем
         if qa.get("refusal", False):
             status = "Refusal"
         elif passed:
@@ -71,14 +81,14 @@ else:
     df = pd.DataFrame(df_data)
     
     st.sidebar.header("Фильтры")
-    selected_status = st.sidebar.multiselect("Статус", df["status"].unique(), default=df["status"].unique())
-    selected_types = st.sidebar.multiselect("Тип вопроса", df["question_type"].unique(), default=df["question_type"].unique())
+    selected_status: List[str] = st.sidebar.multiselect("Статус", df["status"].unique(), default=df["status"].unique())
+    selected_types: List[str] = st.sidebar.multiselect("Тип вопроса", df["question_type"].unique(), default=df["question_type"].unique())
     
     filtered_df = df[df["status"].isin(selected_status) & df["question_type"].isin(selected_types)]
     
     st.metric("Отображено пар", len(filtered_df))
     
-    # Сетка
+    # Отрисовка сетки (карточек) для каждой QA пары
     for i, row in filtered_df.iterrows():
         with st.container():
             col_status, col_q, col_a, col_metrics = st.columns([1, 3, 3, 2])

@@ -1,12 +1,17 @@
+"""
+Страница обзора хранилища исходных документов.
+Показывает список загруженных PDF, их размер, статус обработки (есть ли Markdown)
+и позволяет просмотреть все нарезанные из них чанки.
+"""
 import streamlit as st
 import sys
-import os
 import json
 from pathlib import Path
 import pandas as pd
+from typing import Dict, List, Any
 
-# Пути
-root_path = Path(__file__).resolve().parent.parent.parent.parent
+# Настройка путей
+root_path: Path = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.append(str(root_path))
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
@@ -19,33 +24,33 @@ setup_sidebar()
 st.title("📁 Хранилище документов")
 st.markdown("Просмотр исходных документов, статуса обработки и нарезанных чанков.")
 
-raw_docs_dir = root_path / "data" / "raw_docs"
-processed_docs_dir = root_path / "data" / "processed_docs"
-chunks_path = root_path / "data" / "chunks" / "all_chunks.jsonl"
+raw_docs_dir: Path = root_path / "data" / "raw_docs"
+processed_docs_dir: Path = root_path / "data" / "processed_docs"
+chunks_path: Path = root_path / "data" / "chunks" / "all_chunks.jsonl"
 
-# Подсчитываем чанки
-chunk_counts = {}
+# Подсчитываем чанки по документам
+chunk_counts: Dict[str, int] = {}
 if chunks_path.exists():
     with open(chunks_path, 'r', encoding='utf-8') as f:
         for line in f:
-            c = json.loads(line)
-            # Извлекаем имя документа из chunk_id
-            doc_name = c["chunk_id"].split("_chunk_")[0]
+            c: Dict[str, Any] = json.loads(line)
+            # Извлекаем имя документа из chunk_id (до подстроки "_chunk_")
+            doc_name: str = c["chunk_id"].split("_chunk_")[0]
             chunk_counts[doc_name] = chunk_counts.get(doc_name, 0) + 1
 
 if not raw_docs_dir.exists():
     st.warning("Директория с документами пуста или не существует.")
 else:
-    docs = []
+    docs: List[Dict[str, Any]] = []
     for file in raw_docs_dir.iterdir():
         if file.is_file() and file.suffix.lower() == '.pdf':
-            doc_name = file.name
+            doc_name: str = file.name
             
-            # Проверяем обработку
-            md_file = processed_docs_dir / f"{file.stem}_docling.md"
-            status = "✅ Обработан" if md_file.exists() else "⏳ Ожидает"
-            size_mb = file.stat().st_size / (1024 * 1024)
-            num_chunks = chunk_counts.get(doc_name, 0)
+            # Проверяем, существует ли обработанный Markdown
+            md_file: Path = processed_docs_dir / f"{file.stem}_docling.md"
+            status: str = "✅ Обработан" if md_file.exists() else "⏳ Ожидает"
+            size_mb: float = file.stat().st_size / (1024 * 1024)
+            num_chunks: int = chunk_counts.get(doc_name, 0)
             
             docs.append({
                 "Документ": doc_name,
@@ -59,7 +64,7 @@ else:
         
         st.markdown("**Выберите документ в таблице (кликните по строке), чтобы посмотреть его содержимое и чанки:**")
         
-        # Интерактивная таблица
+        # Интерактивная таблица (позволяет выбрать строку)
         event = st.dataframe(
             df, 
             use_container_width=True,
@@ -67,11 +72,11 @@ else:
             selection_mode="single-row"
         )
         
-        selected_rows = event.selection.rows
+        selected_rows: List[int] = event.selection.rows
         if selected_rows:
-            selected_idx = selected_rows[0]
-            selected_doc = df.iloc[selected_idx]["Документ"]
-            selected_stem = Path(selected_doc).stem
+            selected_idx: int = selected_rows[0]
+            selected_doc: str = df.iloc[selected_idx]["Документ"]
+            selected_stem: str = Path(selected_doc).stem
             
             st.divider()
             st.subheader(f"📄 Просмотр: {selected_doc}")
@@ -79,8 +84,8 @@ else:
             tab1, tab2 = st.tabs(["🧩 Чанки", "📝 Полный Markdown"])
             
             with tab1:
-                # Читаем чанки для этого документа
-                doc_chunks = []
+                # Читаем чанки конкретно для выбранного документа
+                doc_chunks: List[Dict[str, Any]] = []
                 if chunks_path.exists():
                     with open(chunks_path, 'r', encoding='utf-8') as f:
                         for line in f:
@@ -100,11 +105,12 @@ else:
                     st.warning("Для данного документа чанки пока не сгенерированы.")
                     
             with tab2:
-                md_path = processed_docs_dir / f"{selected_stem}_docling.md"
+                # Чтение сгенерированного парсером (Docling) markdown-файла
+                md_path: Path = processed_docs_dir / f"{selected_stem}_docling.md"
                 if md_path.exists():
                     try:
                         with open(md_path, 'r', encoding='utf-8') as f:
-                            md_content = f.read()
+                            md_content: str = f.read()
                         st.markdown(md_content)
                     except Exception as e:
                         st.error(f"Ошибка при чтении файла: {e}")

@@ -1,7 +1,11 @@
+"""
+Модуль Q-Agent (Генератор вопросов).
+Отвечает за генерацию различных типов обучающих вопросов по тексту 
+клинических рекомендаций. Имплементирует стратегию Multi-perspective questioning.
+"""
 import os
 import json
 import logging
-import asyncio
 import aiohttp
 from typing import List, Dict, Any
 from dotenv import load_dotenv
@@ -9,11 +13,12 @@ from dotenv import load_dotenv
 from .models import QuestionBatch
 
 load_dotenv()
-TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
+TOGETHER_API_KEY: str | None = os.getenv("TOGETHER_API_KEY")
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """Вы - строгий медицинский эксперт.
+# Промпт для генерации вопросов с учетом клинических сущностей
+SYSTEM_PROMPT: str = """Вы - строгий медицинский эксперт.
 Ваша задача - сгенерировать обучающие вопросы (Q&A) СТРОГО на основе предоставленного текста.
 Количество вопросов должно зависеть от объема фактической информации в тексте (обычно от 1 до 5 вопросов на фрагмент). Не придумывайте вопросы, ответов на которые нет в тексте!
 
@@ -41,35 +46,50 @@ SYSTEM_PROMPT = """Вы - строгий медицинский эксперт.
 """
 
 class QuestionGenerator:
-    def __init__(self, model="meta-llama/Llama-3.3-70B-Instruct-Turbo"):
-        self.model = model
-        self.headers = {
+    """Класс генератора вопросов через API Together."""
+    
+    def __init__(self, model: str = "meta-llama/Llama-3.3-70B-Instruct-Turbo"):
+        """Инициализация генератора."""
+        self.model: str = model
+        self.headers: Dict[str, str] = {
             "Authorization": f"Bearer {TOGETHER_API_KEY}",
             "Content-Type": "application/json"
         }
 
     async def generate_questions(self, session: aiohttp.ClientSession, chunk: Dict[str, Any]) -> QuestionBatch:
-        text = chunk.get("text", "")
-        entities = json.dumps(chunk.get("entities", {}), ensure_ascii=False, indent=2)
+        """
+        Асинхронная генерация списка вопросов по текстовому чанку.
         
-        prompt = SYSTEM_PROMPT.format(text=text, entities=entities)
+        Args:
+            session (aiohttp.ClientSession): HTTP сессия.
+            chunk (Dict[str, Any]): Чанк, содержащий текст и извлеченные сущности.
+            
+        Returns:
+            QuestionBatch: Pydantic модель, содержащая список сгенерированных вопросов.
+        """
+        text: str = chunk.get("text", "")
+        entities: str = json.dumps(chunk.get("entities", {}), ensure_ascii=False, indent=2)
         
-        payload = {
+        # Подстановка текста и сущностей в промпт
+        prompt: str = SYSTEM_PROMPT.format(text=text, entities=entities)
+        
+        payload: Dict[str, Any] = {
             "model": self.model,
             "messages": [
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.3, # Немного креативности для генерации разных типов вопросов
             "max_tokens": 4096,
-            "response_format": {"type": "json_object"}
+            "response_format": {"type": "json_object"} # Строгий возврат JSON
         }
         
         try:
             async with session.post("https://api.together.xyz/v1/chat/completions", headers=self.headers, json=payload) as response:
                 if response.status == 200:
                     result = await response.json()
-                    content = result["choices"][0]["message"]["content"]
+                    content: str = result["choices"][0]["message"]["content"]
                     try:
+                        # Валидация ответа через Pydantic
                         data = json.loads(content)
                         return QuestionBatch(**data)
                     except Exception as e:

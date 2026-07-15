@@ -1,11 +1,15 @@
+"""
+Страница просмотра чанков и извлеченных сущностей (NER).
+Позволяет визуально оценить качество работы Chunking-модуля и NER-экстрактора.
+"""
 import streamlit as st
 import json
 import pandas as pd
 from pathlib import Path
+from typing import Tuple, Dict, Any, List
 
 import sys
-from pathlib import Path
-root_path = Path(__file__).resolve().parent.parent.parent.parent
+root_path: Path = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.append(str(root_path))
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
@@ -22,19 +26,25 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-chunks_file = Path("data/chunks/all_chunks.jsonl")
-ner_file = Path("data/processed_docs/ner_pilot_results.json")
+chunks_file: Path = Path("data/chunks/all_chunks.jsonl")
+ner_file: Path = Path("data/processed_docs/ner_pilot_results.json")
 
 @st.cache_data
-def load_data():
-    chunks = {}
+def load_data() -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Any]]:
+    """
+    Загружает и кеширует данные чанков и NER.
+    
+    Returns:
+        Tuple[Dict, Dict]: Кортеж (словарь чанков по ID, словарь сущностей по ID)
+    """
+    chunks: Dict[str, Dict[str, Any]] = {}
     if chunks_file.exists():
         with open(chunks_file, 'r', encoding='utf-8') as f:
             for line in f:
                 c = json.loads(line)
                 chunks[c["chunk_id"]] = c
                 
-    ner_data = {}
+    ner_data: Dict[str, Any] = {}
     if ner_file.exists():
         try:
             with open(ner_file, 'r', encoding='utf-8') as f:
@@ -51,13 +61,13 @@ chunks, ner_data = load_data()
 if not chunks:
     st.warning("Чанки не найдены. Сначала запустите пайплайн обработки.")
 else:
-    chunk_ids = list(chunks.keys())
+    chunk_ids: List[str] = list(chunks.keys())
     
     st.sidebar.header("Фильтры")
-    selected_chunk_id = st.sidebar.selectbox("Выберите чанк для просмотра:", chunk_ids)
+    selected_chunk_id: str = st.sidebar.selectbox("Выберите чанк для просмотра:", chunk_ids)
     
-    chunk = chunks[selected_chunk_id]
-    entities = ner_data.get(selected_chunk_id, {})
+    chunk: Dict[str, Any] = chunks[selected_chunk_id]
+    entities: Dict[str, Any] = ner_data.get(selected_chunk_id, {})
     
     col1, col2 = st.columns([2, 1])
     

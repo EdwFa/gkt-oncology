@@ -1,6 +1,11 @@
+"""
+Вспомогательный модуль (утилиты) для Streamlit-приложения.
+Содержит функции для инъекции кастомного CSS, настройки сайдбара и рендера UI-компонентов.
+"""
 import streamlit as st
 
-def inject_custom_css():
+def inject_custom_css() -> None:
+    """Внедряет пользовательские CSS-стили в приложение для улучшения внешнего вида."""
     st.markdown("""
     <style>
         .main {
@@ -106,7 +111,8 @@ def inject_custom_css():
     </style>
     """, unsafe_allow_html=True)
 
-def setup_sidebar():
+def setup_sidebar() -> None:
+    """Настраивает боковое меню (sidebar) навигации приложения."""
     with st.sidebar:
         st.markdown("---")
         st.markdown("### 🧬 GKT Oncology")
@@ -122,7 +128,15 @@ def setup_sidebar():
         st.markdown("---")
         st.markdown("<small>dhc@sechenov.ai<br>Версия 0.1.0 MVP</small>", unsafe_allow_html=True)
 
-def render_metric_card(title: str, value: str, icon: str = ""):
+def render_metric_card(title: str, value: str, icon: str = "") -> None:
+    """
+    Рендерит HTML-карточку для отображения метрики на дашборде.
+    
+    Args:
+        title (str): Заголовок метрики (например, "Всего чанков").
+        value (str): Числовое или текстовое значение метрики.
+        icon (str, optional): Эмодзи-иконка для визуализации. Defaults to "".
+    """
     st.markdown(f"""
     <div class="card">
         <div class="agent-icon">{icon}</div>
